@@ -33,7 +33,7 @@ def getExecutions(project):
     executions = []
 
     try:
-        url = URL + 'project/' + project + '/executions?olderFilter=' + str(PROPERTIES['MAXIMUM_DAYS']) + 'd&max=0'
+        url = URL + 'project/' + project + '/executions?olderFilter=' + str(PROPERTIES['MAXIMUM_DAYS']) + 'd&max=' + str(PROPERTIES['PAGE_SIZE'])
         r = requests.get(url, headers=HEADERS, verify=False,timeout=PROPERTIES['TIMEOUT'])
         root = ET.fromstring(r.text.encode('utf-8'))
         print root.attrib
@@ -55,8 +55,21 @@ def delete_execution(execution_id):
         if PROPERTIES['VERBOSE']:
             print "            Deleted execution id {0} {1} {2}".format( execution_id, r.text, r )
     except:
+        print "could not delete"
         pass
 
+# API call to delete multiple executions
+def delete_executions(id_list):
+    global PROPERTIES
+    global HEADERS
+    url = URL + 'executions/delete'
+    jsonvar = "[" + ",".join(id_list) + "]"
+    try:
+        r = requests.post(url, headers=HEADERS, data=jsonvar, verify=False,timeout=PROPERTIES['TIMEOUT'])
+        if PROPERTIES['VERBOSE']:
+            print "            Deleted executions id {0} {1} {2}".format( jsonvar, r.text, r )
+    except:
+        raise
 
 
 #
@@ -79,6 +92,10 @@ TODAY = int(round(time.time() * 1000))
 
 for project in get_projects():
     print project
-    for execution in getExecutions(project):
-        delete_execution(execution)
+    executions = getExecutions(project)
+    while len(executions) > 0:
+        #for execution in executions:
+        #    delete_execution(execution)
+        delete_executions(executions)
+        executions = getExecutions(project)
 
